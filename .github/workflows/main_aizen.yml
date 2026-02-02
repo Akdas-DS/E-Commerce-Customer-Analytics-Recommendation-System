@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy ASP.Net Core app to Azure Web App - aizen
+name: Build and deploy Python app to Azure Web App - aizen
 
 on:
   push:
@@ -10,46 +10,30 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: windows-latest
-    permissions:
-      contents: read #This is required for actions/checkout
-
+    
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up .NET Core
-        uses: actions/setup-dotnet@v4
+      - name: Set up Python version
+        uses: actions/setup-python@v5
         with:
-          dotnet-version: '8.x'
+          python-version: ''
 
-      - name: Build with dotnet
-        run: dotnet build --configuration Release
+      - name: Install Python dependencies
+        run: |
+          python -m venv env
+          .\\env\\Scripts\\activate
+          pip install -r requirements.txt
 
-      - name: dotnet publish
-        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
-
-      - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v4
-        with:
-          name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
-
-  deploy:
-    runs-on: windows-latest
-    needs: build
-    
-    steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
-        with:
-          name: .net-app
+      - name: Zip the application files
+        run: Compress-Archive .\\* app.zip
       
-      - name: Deploy to Azure Web App
-        id: deploy-to-webapp
+      - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'aizen'
           slot-name: 'Production'
-          package: .
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_D9FACD160F4B4EBA95FC9DB1C073AFC9 }}
+          package: '.\\app.zip'
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_2D7A60F980E746179A5FE6B663FBC62C }}
